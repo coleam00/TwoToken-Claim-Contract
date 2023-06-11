@@ -6,7 +6,7 @@ from brownie import network, accounts, exceptions
 from web3 import Web3
 import pytest
 
-def test_owner_can_deposit_usdc():
+def test_owner_can_deposit_TwoToken():
     # Arrange
     if network.show_active() not in LOCAL_BLOCKCHAIN_ENVIRONMENTS:
         pytest.skip("This test is only for local blockchains.")
@@ -14,9 +14,9 @@ def test_owner_can_deposit_usdc():
     account = get_account()
     account2 = get_account(2)
     account3 = get_account(3)
-    mockUSDC = deploy_mock_token()
+    mockTwoToken = deploy_mock_token()
     mockNFT = deploy_mock_nft()
-    claimContract = deploy_claim_contract(mockNFT.address, mockUSDC.address)
+    claimContract = deploy_claim_contract(mockNFT.address, mockTwoToken.address)
 
     # Act
     account2NFTCount = 15
@@ -35,13 +35,13 @@ def test_owner_can_deposit_usdc():
         currTokenIdTx.wait(1)
         mockNFT.safeTransferFrom(account.address, account3.address, currTokenId, {"from": account})
 
-    mockUSDC.approve(claimContract.address, depositAmount, {"from": account})
+    mockTwoToken.approve(claimContract.address, depositAmount, {"from": account})
     claimContract.depositRewards(depositAmount, {"from": account})
 
     # Assert
     assert mockNFT._tokenIds() == account2NFTCount + account3NFTCount
-    assert claimContract.addressToUSDCCanClaim(account2.address) == depositAmount * (account2NFTCount / (account2NFTCount + account3NFTCount))
-    assert claimContract.addressToUSDCCanClaim(account3.address) == depositAmount * (account3NFTCount / (account2NFTCount + account3NFTCount))
+    assert claimContract.addressToTwoTokenCanClaim(account2.address) == depositAmount * (account2NFTCount / (account2NFTCount + account3NFTCount))
+    assert claimContract.addressToTwoTokenCanClaim(account3.address) == depositAmount * (account3NFTCount / (account2NFTCount + account3NFTCount))
 
 def test_rewards_can_deposit_in_chunks():
     # Arrange
@@ -51,9 +51,9 @@ def test_rewards_can_deposit_in_chunks():
     account = get_account()
     account2 = get_account(2)
     account3 = get_account(3)
-    mockUSDC = deploy_mock_token()
+    mockTwoToken = deploy_mock_token()
     mockNFT = deploy_mock_nft()
-    claimContract = deploy_claim_contract(mockNFT.address, mockUSDC.address)
+    claimContract = deploy_claim_contract(mockNFT.address, mockTwoToken.address)
 
     # Act
     account2NFTCount = 15
@@ -73,18 +73,18 @@ def test_rewards_can_deposit_in_chunks():
         currTokenIdTx.wait(1)
         mockNFT.safeTransferFrom(account.address, account3.address, currTokenId, {"from": account})
 
-    mockUSDC.approve(claimContract.address, depositAmount / 2, {"from": account})
+    mockTwoToken.approve(claimContract.address, depositAmount / 2, {"from": account})
     claimContract.depositRewardsInChunks(depositAmount / 2, 1, totalNFTs / 2, {"from": account})
 
-    mockUSDC.approve(claimContract.address, depositAmount / 2, {"from": account})
+    mockTwoToken.approve(claimContract.address, depositAmount / 2, {"from": account})
     claimContract.depositRewardsInChunks(depositAmount / 2, totalNFTs / 2 + 1, totalNFTs, {"from": account})
 
     # Assert
     assert mockNFT._tokenIds() == account2NFTCount + account3NFTCount
-    assert claimContract.addressToUSDCCanClaim(account2.address) == depositAmount * (account2NFTCount / (account2NFTCount + account3NFTCount))
-    assert claimContract.addressToUSDCCanClaim(account3.address) == depositAmount * (account3NFTCount / (account2NFTCount + account3NFTCount))    
+    assert claimContract.addressToTwoTokenCanClaim(account2.address) == depositAmount * (account2NFTCount / (account2NFTCount + account3NFTCount))
+    assert claimContract.addressToTwoTokenCanClaim(account3.address) == depositAmount * (account3NFTCount / (account2NFTCount + account3NFTCount))    
 
-def test_users_can_withdraw_usdc():
+def test_users_can_withdraw_TwoToken():
     # Arrange
     if network.show_active() not in LOCAL_BLOCKCHAIN_ENVIRONMENTS:
         pytest.skip("This test is only for local blockchains.")
@@ -92,9 +92,9 @@ def test_users_can_withdraw_usdc():
     account = get_account()
     account2 = get_account(2)
     account3 = get_account(3)
-    mockUSDC = deploy_mock_token()
+    mockTwoToken = deploy_mock_token()
     mockNFT = deploy_mock_nft()
-    claimContract = deploy_claim_contract(mockNFT.address, mockUSDC.address)
+    claimContract = deploy_claim_contract(mockNFT.address, mockTwoToken.address)
 
     # Act
     account2NFTCount = 15
@@ -113,22 +113,22 @@ def test_users_can_withdraw_usdc():
         currTokenIdTx.wait(1)
         mockNFT.safeTransferFrom(account.address, account3.address, currTokenId, {"from": account})
 
-    mockUSDC.approve(claimContract.address, depositAmount, {"from": account})
+    mockTwoToken.approve(claimContract.address, depositAmount, {"from": account})
     claimContract.depositRewards(depositAmount, {"from": account})
 
-    account2InitialBalance = mockUSDC.balanceOf(account2.address)
-    account3InitialBalance = mockUSDC.balanceOf(account3.address)
-    account2CanClaimAmount = claimContract.addressToUSDCCanClaim(account2.address)
-    account3CanClaimAmount = claimContract.addressToUSDCCanClaim(account3.address)
+    account2InitialBalance = mockTwoToken.balanceOf(account2.address)
+    account3InitialBalance = mockTwoToken.balanceOf(account3.address)
+    account2CanClaimAmount = claimContract.addressToTwoTokenCanClaim(account2.address)
+    account3CanClaimAmount = claimContract.addressToTwoTokenCanClaim(account3.address)
 
     claimContract.claimRewards({"from": account2})
     claimContract.claimRewards({"from": account3})
 
     # Assert
-    assert mockUSDC.balanceOf(account2.address) == account2InitialBalance + account2CanClaimAmount
-    assert mockUSDC.balanceOf(account3.address) == account3InitialBalance + account3CanClaimAmount
-    assert claimContract.addressToUSDCCanClaim(account2.address) == 0
-    assert claimContract.addressToUSDCCanClaim(account3.address) == 0
+    assert mockTwoToken.balanceOf(account2.address) == account2InitialBalance + account2CanClaimAmount
+    assert mockTwoToken.balanceOf(account3.address) == account3InitialBalance + account3CanClaimAmount
+    assert claimContract.addressToTwoTokenCanClaim(account2.address) == 0
+    assert claimContract.addressToTwoTokenCanClaim(account3.address) == 0
 
     with pytest.raises(exceptions.VirtualMachineError) as ex:
         claimContract.claimRewards({"from": account2})
